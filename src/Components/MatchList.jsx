@@ -12,7 +12,7 @@ export default function MatchList() {
       setLoading(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/matches"
+        "https://fcc-backend-4a4b.onrender.com"
       );
 
       if (!response.ok) {

@@ -178,7 +178,7 @@ const [showMatches, setShowMatches] = useState(false);
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/matches"
+        "https://fcc-backend-4a4b.onrender.com/api/matches"
       );
 
       if (!response.ok) {
@@ -377,7 +377,7 @@ const liveMatches = availableMatches.filter(
 
     if (!match._id) return;
 
-    fetch(`http://localhost:5000/api/matches/${match._id}`, {
+    fetch(`https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`, {
       method: "PUT",
 
       headers: {
@@ -416,7 +416,7 @@ const liveMatches = availableMatches.filter(
     const loadLatestMatch = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/matches/${match._id}`
+          `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`
         );
 
         if (!response.ok) {
@@ -492,7 +492,7 @@ isLocked: true,
 
   try {
     const response = await fetch(
-      "http://localhost:5000/api/matches",
+      "https://fcc-backend-4a4b.onrender.com/api/matches",
       {
         method: "POST",
 
@@ -1253,7 +1253,7 @@ isLocked: true,
                        onClick={async () => {
   try {
     const response = await fetch(
-      `http://localhost:5000/api/matches/${savedMatch._id}`
+      `https://fcc-backend-4a4b.onrender.com/api/matches/${savedMatch._id}`
     );
 
     if (!response.ok) {
