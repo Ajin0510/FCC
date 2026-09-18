@@ -3,8 +3,6 @@ import { motion } from "motion/react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
-
 const STORAGE_KEY = "scoremagic-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
@@ -21,9 +19,8 @@ const getUserId = () => {
 
 const USER_ID = getUserId();
 
-
 const initialMatch = {
-    _id: null,
+  _id: null,
   matchType: "",
   totalOvers: 6,
 
@@ -60,20 +57,13 @@ const initialMatch = {
   showAllOvers: false,
 };
 
-
-
-
 const card =
   "rounded-2xl border border-amber-400/20 bg-black/70 p-5 backdrop-blur-xl shadow-[0_0_30px_rgba(245,158,11,0.08)]";
 
 const input =
   "w-full rounded-xl border border-amber-400/20 bg-black/70 px-4 py-3 text-white outline-none focus:border-amber-400";
 
-function ScoreMagicBackground()
-
-
-
-{
+function ScoreMagicBackground() {
   return (
     <>
       <div className="absolute inset-0 bg-black" />
@@ -133,11 +123,8 @@ function ScoreMagicBackground()
   );
 }
 
-
-
 export default function ScoreMagic() {
   const [match, setMatch] = useState(() => {
-    
     const saved = localStorage.getItem(STORAGE_KEY);
 
     if (saved) {
@@ -150,13 +137,12 @@ export default function ScoreMagic() {
 
     return initialMatch;
   });
+
   const [availableMatches, setAvailableMatches] = useState([]);
-const [showMatches, setShowMatches] = useState(false);
+  const [showMatches, setShowMatches] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
 
-  const [showRestore, setShowRestore] = useState(
-    match.matchStarted
-  );
+  const [showRestore, setShowRestore] = useState(match.matchStarted);
 
   const isReadOnly =
     match.isLocked === true &&
@@ -196,13 +182,14 @@ const [showMatches, setShowMatches] = useState(false);
       setLoadingMatches(false);
     }
   };
-  const myMatches = availableMatches.filter(
-  (savedMatch) => savedMatch.lockedBy === USER_ID
-);
 
-const liveMatches = availableMatches.filter(
-  (savedMatch) => savedMatch.lockedBy !== USER_ID
-);
+  const myMatches = availableMatches.filter(
+    (savedMatch) => savedMatch.lockedBy === USER_ID
+  );
+
+  const liveMatches = availableMatches.filter(
+    (savedMatch) => savedMatch.lockedBy !== USER_ID
+  );
 
   const maxInnings =
     match.matchType === "test" ? 4 : 2;
@@ -309,7 +296,6 @@ const liveMatches = availableMatches.filter(
       );
     };
 
-
     window.history.pushState(
       { scoreMagic: true },
       "",
@@ -377,16 +363,19 @@ const liveMatches = availableMatches.filter(
 
     if (!match._id) return;
 
-    fetch(`https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`, {
-      method: "PUT",
+    fetch(
+      `https://fcc-backend-4a4b.onrender.com/api/matches/${match._id}`,
+      {
+        method: "PUT",
 
-      headers: {
-        "Content-Type": "application/json",
-        "x-user-id": USER_ID,
-      },
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": USER_ID,
+        },
 
-      body: JSON.stringify(match),
-    })
+        body: JSON.stringify(match),
+      }
+    )
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to update match");
@@ -395,10 +384,16 @@ const liveMatches = availableMatches.filter(
         return response.json();
       })
       .then((updatedMatch) => {
-        console.log("Match updated in MongoDB:", updatedMatch);
+        console.log(
+          "Match updated in MongoDB:",
+          updatedMatch
+        );
       })
       .catch((error) => {
-        console.error("MongoDB update error:", error);
+        console.error(
+          "MongoDB update error:",
+          error
+        );
       });
   }, [match, isReadOnly]);
 
@@ -416,7 +411,7 @@ const liveMatches = availableMatches.filter(
     const loadLatestMatch = async () => {
       try {
         const response = await fetch(
-          `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`
+          `https://fcc-backend-4a4b.onrender.com/api/matches/${match._id}`
         );
 
         if (!response.ok) {
@@ -430,7 +425,10 @@ const liveMatches = availableMatches.filter(
           ...latestMatch,
         }));
       } catch (error) {
-        console.error("Live score update error:", error);
+        console.error(
+          "Live score update error:",
+          error
+        );
       }
     };
 
@@ -459,76 +457,88 @@ const liveMatches = availableMatches.filter(
   /*
     START MATCH
   */
-const startMatch = async () => {
-  if (!match.matchType) {
-    alert("Please select match type");
-    return;
-  }
 
-  if (!match.team1 || !match.team2) {
-    alert("Please enter both team names");
-    return;
-  }
-
-  const { _id, ...matchWithoutId } = match;
-
-  const matchData = {
-    ...matchWithoutId,
-
-    matchStarted: true,
-    innings: 1,
-
-    battingTeam: match.team1,
-    bowlingTeam: match.team2,
-
-    score: 0,
-    wickets: 0,
-
-    overs: [],
-    currentOver: [],
-    lockedBy: USER_ID,
-isLocked: true,
-  };
-
-  try {
-    const response = await fetch(
-      "https://fcc-backend-4a4b.onrender.com/api/matches",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",  "x-user-id": USER_ID,
-        },
-
-        body: JSON.stringify(matchData),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || "Failed to save match"
-      );
+  const startMatch = async () => {
+    if (!match.matchType) {
+      alert("Please select match type");
+      return;
     }
 
-    const savedMatch = await response.json();
+    if (!match.team1 || !match.team2) {
+      alert("Please enter both team names");
+      return;
+    }
 
-    console.log("Match saved:", savedMatch);
+    const { _id, ...matchWithoutId } = match;
 
-    setMatch({
-      ...matchData,
-      _id: savedMatch._id,
-    });
+    const matchData = {
+      ...matchWithoutId,
 
-    setShowRestore(false);
+      matchStarted: true,
+      innings: 1,
 
-  } catch (error) {
-    console.error("Error saving match:", error);
+      battingTeam: match.team1,
+      bowlingTeam: match.team2,
 
-    alert(`Could not save match to database: ${error.message}`);
-  }
-};
-  
+      score: 0,
+      wickets: 0,
+
+      overs: [],
+      currentOver: [],
+      lockedBy: USER_ID,
+      isLocked: true,
+    };
+
+    try {
+      const response = await fetch(
+        "https://fcc-backend-4a4b.onrender.com/api/matches",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": USER_ID,
+          },
+
+          body: JSON.stringify(matchData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({}));
+
+        throw new Error(
+          errorData.error ||
+            "Failed to save match"
+        );
+      }
+
+      const savedMatch = await response.json();
+
+      console.log(
+        "Match saved:",
+        savedMatch
+      );
+
+      setMatch({
+        ...matchData,
+        _id: savedMatch._id,
+      });
+
+      setShowRestore(false);
+    } catch (error) {
+      console.error(
+        "Error saving match:",
+        error
+      );
+
+      alert(
+        `Could not save match to database: ${error.message}`
+      );
+    }
+  };
 
   /*
     ADD BALL
@@ -783,6 +793,76 @@ isLocked: true,
   };
 
   /*
+    DELETE MATCH
+  */
+
+  const deleteMatch = async (matchId) => {
+    if (!matchId) return;
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this match?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const response = await fetch(
+        `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": USER_ID,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({}));
+
+        throw new Error(
+          errorData.error ||
+            "Failed to delete match"
+        );
+      }
+
+      setAvailableMatches((prev) =>
+        prev.filter(
+          (savedMatch) =>
+            savedMatch._id !== matchId
+        )
+      );
+
+      if (match._id === matchId) {
+        localStorage.removeItem(STORAGE_KEY);
+
+        setMatch({
+          ...initialMatch,
+          team1Players:
+            Array(11).fill(""),
+          team2Players:
+            Array(11).fill(""),
+        });
+
+        setShowMatches(false);
+        setShowRestore(false);
+      }
+    } catch (error) {
+      console.error(
+        "Error deleting match:",
+        error
+      );
+
+      alert(
+        `Unable to delete match: ${error.message}`
+      );
+    }
+  };
+
+  /*
     DOWNLOAD PDF
   */
 
@@ -828,8 +908,10 @@ isLocked: true,
         battingTeam: match.battingTeam,
         score: match.score,
         wickets: match.wickets,
-        batsmanStats: match.batsmanStats,
-        bowlerStats: match.bowlerStats,
+        batsmanStats:
+          match.batsmanStats,
+        bowlerStats:
+          match.bowlerStats,
       },
     ];
 
@@ -918,7 +1000,9 @@ isLocked: true,
     return (
       <div className="relative min-h-screen overflow-hidden bg-black text-white">
         <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
-          <div className={`${card} w-full max-w-md text-center`}>
+          <div
+            className={`${card} w-full max-w-md text-center`}
+          >
             <h1 className="text-3xl font-bold text-amber-400">
               🏏 Match Found
             </h1>
@@ -979,7 +1063,8 @@ isLocked: true,
                   })
                 }
                 className={`rounded-xl border p-5 ${
-                  match.matchType === "limited"
+                  match.matchType ===
+                  "limited"
                     ? "border-amber-400 bg-amber-400/10"
                     : "border-white/10"
                 }`}
@@ -1001,7 +1086,8 @@ isLocked: true,
                   })
                 }
                 className={`rounded-xl border p-5 ${
-                  match.matchType === "test"
+                  match.matchType ===
+                  "test"
                     ? "border-amber-400 bg-amber-400/10"
                     : "border-white/10"
                 }`}
@@ -1023,7 +1109,8 @@ isLocked: true,
                 value={match.team1}
                 onChange={(e) =>
                   updateMatch({
-                    team1: e.target.value,
+                    team1:
+                      e.target.value,
                   })
                 }
               />
@@ -1034,7 +1121,8 @@ isLocked: true,
                 value={match.team2}
                 onChange={(e) =>
                   updateMatch({
-                    team2: e.target.value,
+                    team2:
+                      e.target.value,
                   })
                 }
               />
@@ -1070,7 +1158,9 @@ isLocked: true,
 
           <div className={`${card} mt-6`}>
             <h2 className="mb-4 text-xl font-bold text-amber-400">
-              {match.team1 || "Team 1"} Players
+              {match.team1 ||
+                "Team 1"}{" "}
+              Players
             </h2>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1079,7 +1169,9 @@ isLocked: true,
                   <input
                     key={index}
                     className={input}
-                    placeholder={`Player ${index + 1}`}
+                    placeholder={`Player ${
+                      index + 1
+                    }`}
                     value={player}
                     onChange={(e) => {
                       const players = [
@@ -1090,7 +1182,8 @@ isLocked: true,
                         e.target.value;
 
                       updateMatch({
-                        team1Players: players,
+                        team1Players:
+                          players,
                       });
                     }}
                   />
@@ -1103,7 +1196,9 @@ isLocked: true,
 
           <div className={`${card} mt-6`}>
             <h2 className="mb-4 text-xl font-bold text-amber-400">
-              {match.team2 || "Team 2"} Players
+              {match.team2 ||
+                "Team 2"}{" "}
+              Players
             </h2>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1112,7 +1207,9 @@ isLocked: true,
                   <input
                     key={index}
                     className={input}
-                    placeholder={`Player ${index + 1}`}
+                    placeholder={`Player ${
+                      index + 1
+                    }`}
                     value={player}
                     onChange={(e) => {
                       const players = [
@@ -1123,7 +1220,8 @@ isLocked: true,
                         e.target.value;
 
                       updateMatch({
-                        team2Players: players,
+                        team2Players:
+                          players,
                       });
                     }}
                   />
@@ -1139,23 +1237,23 @@ isLocked: true,
             Start Match 🏏
           </button>
 
-        <button
-  onClick={() => {
-    if (showMatches) {
-      setShowMatches(false);
-    } else {
-      loadMatches();
-    }
-  }}
-  type="button"
-  className="mt-4 w-full rounded-xl border border-amber-400/40 py-3 font-bold text-amber-400 hover:bg-amber-400 hover:text-black"
->
-  {loadingMatches
-    ? "Loading Matches..."
-    : showMatches
-      ? "✖️ Hide Live Matches"
-      : "👁️ View Live Matches"}
-</button>
+          <button
+            onClick={() => {
+              if (showMatches) {
+                setShowMatches(false);
+              } else {
+                loadMatches();
+              }
+            }}
+            type="button"
+            className="mt-4 w-full rounded-xl border border-amber-400/40 py-3 font-bold text-amber-400 hover:bg-amber-400 hover:text-black"
+          >
+            {loadingMatches
+              ? "Loading Matches..."
+              : showMatches
+              ? "✖️ Hide Live Matches"
+              : "👁️ View Live Matches"}
+          </button>
 
           {showMatches && (
             <div className={`${card} mt-5`}>
@@ -1169,7 +1267,9 @@ isLocked: true,
                   onClick={loadMatches}
                   className="rounded-lg border border-amber-400/30 px-3 py-2 text-sm text-amber-400"
                 >
-                  {loadingMatches ? "Loading..." : "Refresh"}
+                  {loadingMatches
+                    ? "Loading..."
+                    : "Refresh"}
                 </button>
               </div>
 
@@ -1178,59 +1278,92 @@ isLocked: true,
                   🏏 My Matches
                 </h3>
 
-                {myMatches.length === 0 ? (
+                {myMatches.length ===
+                0 ? (
                   <p className="rounded-xl border border-white/10 p-4 text-center text-sm text-zinc-500">
                     You have not created any matches yet.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {myMatches.map((savedMatch) => (
-                      <div
-                        key={savedMatch._id}
-                        className="rounded-xl border border-green-400/20 bg-black/60 p-4"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMatch(savedMatch);
-                            setShowMatches(false);
-                            setShowRestore(false);
-                          }}
-                          className="w-full text-left transition hover:opacity-80"
+                    {myMatches.map(
+                      (savedMatch) => (
+                        <div
+                          key={
+                            savedMatch._id
+                          }
+                          className="rounded-xl border border-green-400/20 bg-black/60 p-4"
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="font-bold text-white">
-                                {savedMatch.team1} vs {savedMatch.team2}
-                              </p>
-                              <p className="mt-1 text-sm text-zinc-400">
-                                Innings {savedMatch.innings}
-                              </p>
-                              <p className="mt-1 text-xs text-green-400">
-                                ✏️ You are the match editor
-                              </p>
-                            </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMatch(
+                                savedMatch
+                              );
+                              setShowMatches(
+                                false
+                              );
+                              setShowRestore(
+                                false
+                              );
+                            }}
+                            className="w-full text-left transition hover:opacity-80"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-bold text-white">
+                                  {
+                                    savedMatch.team1
+                                  }{" "}
+                                  vs{" "}
+                                  {
+                                    savedMatch.team2
+                                  }
+                                </p>
 
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-amber-400">
-                                {savedMatch.score}/{savedMatch.wickets}
-                              </p>
-                              <p className="text-xs text-zinc-500">
-                                Continue Editing
-                              </p>
-                            </div>
-                          </div>
-                        </button>
+                                <p className="mt-1 text-sm text-zinc-400">
+                                  Innings{" "}
+                                  {
+                                    savedMatch.innings
+                                  }
+                                </p>
 
-                        <button
-                          type="button"
-                          onClick={() => deleteMatch(savedMatch._id)}
-                          className="mt-3 w-full rounded-lg border border-red-400/40 py-2 font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
-                        >
-                          🗑️ Delete Match
-                        </button>
-                      </div>
-                    ))}
+                                <p className="mt-1 text-xs text-green-400">
+                                  ✏️ You are the match editor
+                                </p>
+                              </div>
+
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-amber-400">
+                                  {
+                                    savedMatch.score
+                                  }
+                                  /
+                                  {
+                                    savedMatch.wickets
+                                  }
+                                </p>
+
+                                <p className="text-xs text-zinc-500">
+                                  Continue Editing
+                                </p>
+                              </div>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              deleteMatch(
+                                savedMatch._id
+                              )
+                            }
+                            className="mt-3 w-full rounded-lg border border-red-400/40 py-2 font-bold text-red-400 transition hover:bg-red-500 hover:text-white"
+                          >
+                            🗑️ Delete Match
+                          </button>
+                        </div>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -1240,68 +1373,110 @@ isLocked: true,
                   👁️ Live Matches
                 </h3>
 
-                {liveMatches.length === 0 ? (
+                {liveMatches.length ===
+                0 ? (
                   <p className="rounded-xl border border-white/10 p-4 text-center text-sm text-zinc-500">
                     No other live matches available.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {liveMatches.map((savedMatch) => (
-                      <button
-                        key={savedMatch._id}
-                        type="button"
-                       onClick={async () => {
-  try {
-    const response = await fetch(
-      `https://fcc-backend-4a4b.onrender.com/api/matches/${savedMatch._id}`
-    );
+                    {liveMatches.map(
+                      (savedMatch) => (
+                        <button
+                          key={
+                            savedMatch._id
+                          }
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response =
+                                await fetch(
+                                  `https://fcc-backend-4a4b.onrender.com/api/matches/${savedMatch._id}`
+                                );
 
-    if (!response.ok) {
-      throw new Error("Failed to load match");
-    }
+                              if (
+                                !response.ok
+                              ) {
+                                throw new Error(
+                                  "Failed to load match"
+                                );
+                              }
 
-    const latestMatch = await response.json();
+                              const latestMatch =
+                                await response.json();
 
-    setMatch(latestMatch);
-    setShowMatches(false);
-    setShowRestore(false);
-  } catch (error) {
-    console.error("Error opening live match:", error);
-    alert("Unable to open live match");
-  }
-}}
-                        className="w-full rounded-xl border border-blue-400/20 bg-black/60 p-4 text-left transition hover:border-blue-400/60 hover:bg-blue-400/5"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-bold text-white">
-                              {savedMatch.team1} vs {savedMatch.team2}
-                            </p>
-                            <p className="mt-1 text-sm text-zinc-400">
-                              Innings {savedMatch.innings}
-                            </p>
-                            <p className="mt-1 text-xs text-blue-400">
-                              🔒 Live Match — View Only
-                            </p>
+                              setMatch(
+                                latestMatch
+                              );
+
+                              setShowMatches(
+                                false
+                              );
+
+                              setShowRestore(
+                                false
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Error opening live match:",
+                                error
+                              );
+
+                              alert(
+                                "Unable to open live match"
+                              );
+                            }
+                          }}
+                          className="w-full rounded-xl border border-blue-400/20 bg-black/60 p-4 text-left transition hover:border-blue-400/60 hover:bg-blue-400/5"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-bold text-white">
+                                {
+                                  savedMatch.team1
+                                }{" "}
+                                vs{" "}
+                                {
+                                  savedMatch.team2
+                                }
+                              </p>
+
+                              <p className="mt-1 text-sm text-zinc-400">
+                                Innings{" "}
+                                {
+                                  savedMatch.innings
+                                }
+                              </p>
+
+                              <p className="mt-1 text-xs text-blue-400">
+                                🔒 Live Match — View Only
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-amber-400">
+                                {
+                                  savedMatch.score
+                                }
+                                /
+                                {
+                                  savedMatch.wickets
+                                }
+                              </p>
+
+                              <p className="text-xs text-zinc-500">
+                                Watch Live
+                              </p>
+                            </div>
                           </div>
-
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-amber-400">
-                              {savedMatch.score}/{savedMatch.wickets}
-                            </p>
-                            <p className="text-xs text-zinc-500">
-                              Watch Live
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      )
+                    )}
                   </div>
                 )}
               </div>
             </div>
           )}
-
         </div>
       </div>
     );
@@ -1316,12 +1491,12 @@ isLocked: true,
       <ScoreMagicBackground />
 
       <div className="relative z-10 mx-auto max-w-4xl p-4 py-8">
-
         {isReadOnly && (
           <div className="mb-4 rounded-xl border border-blue-400/30 bg-blue-500/10 p-4 text-center">
             <p className="font-bold text-blue-300">
               👁️ Live Score — View Only
             </p>
+
             <p className="mt-1 text-sm text-zinc-400">
               This match is being edited by another user.
               The score updates automatically.
@@ -1329,26 +1504,32 @@ isLocked: true,
           </div>
         )}
 
-        <div className={`${card} text-center relative`}>
- {/* FCC LOGO - LEFT */}
-<div className="absolute left-4 top-1/2 -translate-y-1/2">
-  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-amber-400 bg-black shadow-lg shadow-amber-400/20">
-    <img
-      src="/eee.png"
-      alt="FCC Logo"
-      className="h-full w-full object-cover"
-    />
-  </div>
-</div>
+        <div
+          className={`${card} text-center relative`}
+        >
+          {/* FCC LOGO - LEFT */}
+
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-amber-400 bg-black shadow-lg shadow-amber-400/20">
+              <img
+                src="/eee.png"
+                alt="FCC Logo"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </div>
+
           <p className="text-sm tracking-[0.3em] text-amber-400">
             FRIENDS CRICKET CLUB
           </p>
 
           <h1 className="mt-3 text-2xl font-bold">
             {match.battingTeam}
+
             <span className="mx-3 text-amber-400">
               VS
             </span>
+
             {match.bowlingTeam}
           </h1>
 
@@ -1362,14 +1543,14 @@ isLocked: true,
 
         <div className="sticky top-0 z-50 mt-4 bg-black/95 py-2 backdrop-blur-md">
           <div className="grid grid-cols-2 gap-4">
-
             <div className={`${card} text-center`}>
               <p className="text-zinc-500">
                 SCORE
               </p>
 
               <h2 className="mt-2 text-4xl font-bold text-amber-400">
-                {match.score}/{match.wickets}
+                {match.score}/
+                {match.wickets}
               </h2>
             </div>
 
@@ -1380,19 +1561,18 @@ isLocked: true,
 
               <h2 className="mt-2 text-4xl font-bold">
                 {completedOvers}.{balls}
+
                 <span className="text-base text-zinc-500">
                   /{match.totalOvers}
                 </span>
               </h2>
             </div>
-
           </div>
         </div>
 
         {/* PLAYERS */}
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-
           <div className={card}>
             <p className="text-amber-400">
               Striker
@@ -1404,7 +1584,8 @@ isLocked: true,
               disabled={isReadOnly}
               onChange={(e) =>
                 updateMatch({
-                  striker: e.target.value,
+                  striker:
+                    e.target.value,
                 })
               }
             >
@@ -1416,7 +1597,8 @@ isLocked: true,
                 .filter(
                   (player) =>
                     player &&
-                    player !== match.nonStriker &&
+                    player !==
+                      match.nonStriker &&
                     !match.dismissedPlayers.includes(
                       player
                     )
@@ -1466,7 +1648,8 @@ isLocked: true,
                 .filter(
                   (player) =>
                     player &&
-                    player !== match.striker &&
+                    player !==
+                      match.striker &&
                     !match.dismissedPlayers.includes(
                       player
                     )
@@ -1531,7 +1714,9 @@ isLocked: true,
 
         {/* CURRENT OVER */}
 
-        <div className={`${card} mt-4 h-[150px] overflow-hidden`}>
+        <div
+          className={`${card} mt-4 h-[150px] overflow-hidden`}
+        >
           <h3 className="text-lg font-bold text-amber-400">
             Current Over
           </h3>
@@ -1556,68 +1741,74 @@ isLocked: true,
 
         {/* PREVIOUS OVERS */}
 
-<div className={`${card} mt-4 h-[300px] overflow-hidden`}>
-  <div className="flex items-center justify-between">
-    <h3 className="text-lg font-bold text-amber-400">
-      Previous Overs
-    </h3>
+        <div
+          className={`${card} mt-4 h-[300px] overflow-hidden`}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-amber-400">
+              Previous Overs
+            </h3>
 
-    {match.overs.length > 3 && (
-      <button
-        type="button"
-        disabled={isReadOnly}
-        onClick={() =>
-          updateMatch({
-            showAllOvers: !match.showAllOvers,
-          })
-        }
-        className="rounded-lg border border-amber-400/30 px-3 py-1 text-sm text-amber-400 transition hover:bg-amber-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {match.showAllOvers
-          ? "Show Latest 3"
-          : "Show All Overs"}
-      </button>
-    )}
-  </div>
-
-  <div className="scrollbar-gold mt-4 h-[220px] space-y-3 overflow-y-auto pr-2">
-    {(match.showAllOvers
-      ? [...match.overs]
-      : [...match.overs].slice(-3)
-    )
-      .reverse()
-      .map((over, index) => {
-        const overNumber =
-          match.overs.length - index;
-
-        return (
-          <div
-            key={overNumber}
-            className="rounded-xl border border-amber-400/10 bg-black/50 p-4"
-          >
-            <p className="mb-3 font-semibold text-amber-400">
-              Over {overNumber}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {over.map((ball, i) => (
-                <span
-                  key={i}
-                  className={`flex h-10 min-w-10 items-center justify-center rounded-full px-2 font-bold ${
-                    ball === "W"
-                      ? "border border-red-500/30 bg-red-500/20 text-red-400"
-                      : "border border-amber-400/20 bg-amber-400/10 text-amber-300"
-                  }`}
-                >
-                  {ball}
-                </span>
-              ))}
-            </div>
+            {match.overs.length > 3 && (
+              <button
+                type="button"
+                disabled={isReadOnly}
+                onClick={() =>
+                  updateMatch({
+                    showAllOvers:
+                      !match.showAllOvers,
+                  })
+                }
+                className="rounded-lg border border-amber-400/30 px-3 py-1 text-sm text-amber-400 transition hover:bg-amber-400 hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {match.showAllOvers
+                  ? "Show Latest 3"
+                  : "Show All Overs"}
+              </button>
+            )}
           </div>
-        );
-      })}
-  </div>
-</div>
+
+          <div className="scrollbar-gold mt-4 h-[220px] space-y-3 overflow-y-auto pr-2">
+            {(match.showAllOvers
+              ? [...match.overs]
+              : [...match.overs].slice(-3)
+            )
+              .reverse()
+              .map((over, index) => {
+                const overNumber =
+                  match.overs.length -
+                  index;
+
+                return (
+                  <div
+                    key={overNumber}
+                    className="rounded-xl border border-amber-400/10 bg-black/50 p-4"
+                  >
+                    <p className="mb-3 font-semibold text-amber-400">
+                      Over {overNumber}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {over.map(
+                        (ball, i) => (
+                          <span
+                            key={i}
+                            className={`flex h-10 min-w-10 items-center justify-center rounded-full px-2 font-bold ${
+                              ball === "W"
+                                ? "border border-red-500/30 bg-red-500/20 text-red-400"
+                                : "border border-amber-400/20 bg-amber-400/10 text-amber-300"
+                            }`}
+                          >
+                            {ball}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
 
         {/* RUN BUTTONS */}
 
@@ -1704,7 +1895,9 @@ isLocked: true,
 
         {inningsFinished &&
           !matchFinished && (
-            <div className={`${card} mt-5 text-center`}>
+            <div
+              className={`${card} mt-5 text-center`}
+            >
               <h2 className="text-2xl font-bold text-amber-400">
                 Innings Completed 🏏
               </h2>
@@ -1712,8 +1905,10 @@ isLocked: true,
               <button
                 type="button"
                 disabled={isReadOnly}
-                onClick={startNextInnings}
-                className="mt-5 rounded-xl bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40 px-6 py-3 font-bold text-black"
+                onClick={
+                  startNextInnings
+                }
+                className="mt-5 rounded-xl bg-amber-400 px-6 py-3 font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Start Innings{" "}
                 {match.innings + 1}
@@ -1724,7 +1919,9 @@ isLocked: true,
         {/* MATCH FINISHED */}
 
         {matchFinished && (
-          <div className={`${card} mt-5 text-center`}>
+          <div
+            className={`${card} mt-5 text-center`}
+          >
             <h2 className="text-3xl font-bold text-amber-400">
               🏆 Match Finished
             </h2>
