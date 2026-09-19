@@ -7,11 +7,13 @@ const STORAGE_KEY = "scoremagic-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
 const getUserId = () => {
-  let userId = localStorage.getItem(USER_ID_KEY);
+  // Each browser tab gets its own user ID.
+  // This lets one tab be the editor and another tab be the viewer.
+  let userId = sessionStorage.getItem(USER_ID_KEY);
 
   if (!userId) {
     userId = crypto.randomUUID();
-    localStorage.setItem(USER_ID_KEY, userId);
+    sessionStorage.setItem(USER_ID_KEY, userId);
   }
 
   return userId;
