@@ -7,8 +7,6 @@ const STORAGE_KEY = "scoremagic-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
 const getUserId = () => {
-  // Each browser tab gets its own user ID.
-  // This lets one tab be the editor and another tab be the viewer.
   let userId = sessionStorage.getItem(USER_ID_KEY);
 
   if (!userId) {
@@ -843,10 +841,8 @@ export default function ScoreMagic() {
 
         setMatch({
           ...initialMatch,
-          team1Players:
-            Array(11).fill(""),
-          team2Players:
-            Array(11).fill(""),
+          team1Players: Array(11).fill(""),
+          team2Players: Array(11).fill(""),
         });
 
         setShowMatches(false);
@@ -1023,7 +1019,7 @@ export default function ScoreMagic() {
             </button>
 
             <button
-              onClick={resetMatch}
+              onClick={() => deleteMatch(match._id)}
               className="mt-3 w-full rounded-xl border border-red-500/40 py-3 text-red-400"
             >
               Delete Match
