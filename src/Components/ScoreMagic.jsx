@@ -7,20 +7,23 @@ const STORAGE_KEY = "scoremagic-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
 const getUserId = () => {
-  // Keep the same anonymous user ID across refreshes and tabs.
-  let userId = localStorage.getItem(USER_ID_KEY);
+  /*
+    Each browser TAB gets its own anonymous user ID.
 
-  // Migrate an older sessionStorage ID if one exists.
-  if (!userId) {
-    userId = sessionStorage.getItem(USER_ID_KEY);
-  }
+    This is intentional:
+    - Tab 1 creates Match A -> Tab 1 can edit Match A.
+    - Tab 2 opens Match A -> Tab 2 is a different user/viewer.
+    - Tab 2 can create Match B -> Tab 2 becomes the editor of Match B.
+    - Refreshing Tab 1 keeps Tab 1 as the owner because sessionStorage
+      survives page refreshes in the same tab.
+  */
+
+  let userId = sessionStorage.getItem(USER_ID_KEY);
 
   if (!userId) {
     userId = crypto.randomUUID();
+    sessionStorage.setItem(USER_ID_KEY, userId);
   }
-
-  localStorage.setItem(USER_ID_KEY, userId);
-  sessionStorage.setItem(USER_ID_KEY, userId);
 
   return userId;
 };
