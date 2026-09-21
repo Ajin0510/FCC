@@ -1,16 +1,26 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Match = require("../models/Match");
 
 const router = express.Router();
 
+const getUserId = (req) => {
+  const userId = req.headers["x-user-id"];
+  if (!userId || typeof userId !== "string") return null;
+  return userId.trim() || null;
+};
+
+const isValidMatchId = (id) =>
+  mongoose.Types.ObjectId.isValid(id);
+
 /*
-====================================================
-CREATE MATCH
-====================================================
+  CREATE
+  Any user can create a match.
+  The server assigns ownership.
 */
 router.post("/", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(401).json({
@@ -20,10 +30,10 @@ router.post("/", async (req, res) => {
 
     const match = new Match({
       ...req.body,
-
-      // Server decides the owner
       lockedBy: userId,
+      ownerId: userId,
       isLocked: true,
+      matchStarted: true,
     });
 
     const savedMatch = await match.save();
@@ -39,17 +49,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 /*
-====================================================
-GET ALL MATCHES
-====================================================
+  LIST
+  Everyone can see all matches.
 */
 router.get("/", async (req, res) => {
   try {
-    const matches = await Match.find().sort({
-      _id: -1,
-    });
+    const matches = await Match.find({})
+      .sort({ createdAt: -1, _id: -1 })
+      .lean();
 
     return res.status(200).json(matches);
   } catch (error) {
@@ -62,17 +70,19 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 /*
-====================================================
-GET ONE MATCH
-====================================================
+  READ
+  Everyone can view a match.
 */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    if (!isValidMatchId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid match ID",
+      });
+    }
 
-    const match = await Match.findById(id);
+    const match = await Match.findById(req.params.id).lean();
 
     if (!match) {
       return res.status(404).json({
@@ -91,15 +101,13 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-
 /*
-====================================================
-UPDATE MATCH
-====================================================
+  UPDATE
+  ONLY the creator can edit.
 */
 router.put("/:id", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
+    const userId = getUserId(req);
 
     if (!userId) {
       return res.status(401).json({
@@ -107,22 +115,28 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const { id } = req.params;
+    if (!isValidMatchId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid match ID",
+      });
+    }
+
+    const updateData = {
+      ...req.body,
+      lockedBy: userId,
+      ownerId: userId,
+      isLocked: true,
+    };
 
     const updatedMatch = await Match.findOneAndUpdate(
       {
-        _id: id,
-
+        _id: req.params.id,
         $or: [
-          {
-            isLocked: false,
-          },
-          {
-            lockedBy: userId,
-          },
+          { ownerId: userId },
+          { lockedBy: userId },
         ],
       },
-      req.body,
+      updateData,
       {
         new: true,
         runValidators: true,
@@ -130,16 +144,19 @@ router.put("/:id", async (req, res) => {
     );
 
     if (!updatedMatch) {
-      const match = await Match.findById(id);
+      const existingMatch = await Match.findById(
+        req.params.id
+      ).lean();
 
-      if (!match) {
+      if (!existingMatch) {
         return res.status(404).json({
           message: "Match not found",
         });
       }
 
       return res.status(403).json({
-        message: "This match is being edited by another user",
+        message:
+          "This match is being edited by another user",
         readOnly: true,
       });
     }
@@ -155,90 +172,63 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-
 /*
-====================================================
-DELETE MATCH
-====================================================
+  DELETE
+  ONLY the creator can delete.
 */
 router.delete("/:id", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
+    const userId = getUserId(req);
 
-    console.log("=================================");
-    console.log("DELETE MATCH REQUEST");
-    console.log("Match ID:", req.params.id);
-    console.log("User ID:", userId);
-    console.log("=================================");
-
-    /*
-    -----------------------------------------------
-    Check User ID
-    -----------------------------------------------
-    */
     if (!userId) {
       return res.status(401).json({
         message: "User ID is required",
       });
     }
 
-    const { id } = req.params;
+    if (!isValidMatchId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid match ID",
+      });
+    }
 
-    /*
-    -----------------------------------------------
-    First check whether match exists
-    -----------------------------------------------
-    */
-    const existingMatch = await Match.findById(id);
+    const existingMatch = await Match.findById(
+      req.params.id
+    ).lean();
 
     if (!existingMatch) {
-      console.log("Match does not exist:", id);
-
       return res.status(404).json({
         message: "Match not found",
       });
     }
 
-    /*
-    -----------------------------------------------
-    Check ownership
-    -----------------------------------------------
-    */
-    console.log("Stored lockedBy:", existingMatch.lockedBy);
-    console.log("Request userId:", userId);
+    const ownerId =
+      existingMatch.ownerId ||
+      existingMatch.lockedBy;
 
-    if (
-      String(existingMatch.lockedBy) !==
-      String(userId)
-    ) {
-      console.log("DELETE DENIED - USER DOES NOT OWN MATCH");
-
+    if (String(ownerId) !== String(userId)) {
       return res.status(403).json({
         message:
           "You cannot delete another user's match",
-        lockedBy: existingMatch.lockedBy,
-        requestedBy: userId,
+        readOnly: true,
       });
     }
 
-    /*
-    -----------------------------------------------
-    Delete match
-    -----------------------------------------------
-    */
     const deletedMatch =
-      await Match.findByIdAndDelete(id);
+      await Match.findOneAndDelete({
+        _id: req.params.id,
+        $or: [
+          { ownerId: userId },
+          { lockedBy: userId },
+        ],
+      });
 
     if (!deletedMatch) {
-      return res.status(404).json({
-        message: "Match could not be deleted",
+      return res.status(403).json({
+        message:
+          "You cannot delete another user's match",
       });
     }
-
-    console.log(
-      "MATCH DELETED SUCCESSFULLY:",
-      deletedMatch._id
-    );
 
     return res.status(200).json({
       success: true,
@@ -255,6 +245,5 @@ router.delete("/:id", async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;

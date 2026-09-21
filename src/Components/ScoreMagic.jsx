@@ -7,12 +7,20 @@ const STORAGE_KEY = "scoremagic-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
 const getUserId = () => {
-  let userId = sessionStorage.getItem(USER_ID_KEY);
+  // Keep the same anonymous user ID across refreshes and tabs.
+  let userId = localStorage.getItem(USER_ID_KEY);
+
+  // Migrate an older sessionStorage ID if one exists.
+  if (!userId) {
+    userId = sessionStorage.getItem(USER_ID_KEY);
+  }
 
   if (!userId) {
     userId = crypto.randomUUID();
-    sessionStorage.setItem(USER_ID_KEY, userId);
   }
+
+  localStorage.setItem(USER_ID_KEY, userId);
+  sessionStorage.setItem(USER_ID_KEY, userId);
 
   return userId;
 };
@@ -145,8 +153,8 @@ export default function ScoreMagic() {
   const [showRestore, setShowRestore] = useState(match.matchStarted);
 
   const isReadOnly =
-    match.isLocked === true &&
-    match.lockedBy !== USER_ID;
+    Boolean(match.lockedBy) &&
+    String(match.lockedBy) !== String(USER_ID);
 
   const updateMatch = (data) => {
     if (isReadOnly) {
@@ -283,33 +291,14 @@ export default function ScoreMagic() {
 
   /*
     BROWSER BACK
-    Allow the browser Back button to leave ScoreMagic
-    and return to the previous page (Home page).
+
+    ScoreMagic does not block the browser Back button.
+    The previous page / Home route can be reached normally.
   */
 
   useEffect(() => {
-    if (!match.matchStarted || matchFinished) return;
-
-    const handlePopState = () => {
-      // Do not push the current page back into history.
-      // The browser can now navigate back to the Home page.
-    };
-
-    window.addEventListener(
-      "popstate",
-      handlePopState
-    );
-
-    return () => {
-      window.removeEventListener(
-        "popstate",
-        handlePopState
-      );
-    };
-  }, [
-    match.matchStarted,
-    matchFinished,
-  ]);
+    return undefined;
+  }, []);
 
   /*
     BLOCK REFRESH / CLOSE
@@ -479,6 +468,7 @@ export default function ScoreMagic() {
       overs: [],
       currentOver: [],
       lockedBy: USER_ID,
+      ownerId: USER_ID,
       isLocked: true,
     };
 
@@ -790,80 +780,74 @@ export default function ScoreMagic() {
   */
 
   const deleteMatch = async (matchId) => {
-  if (!matchId) {
-    alert("Match ID is missing");
-    return;
-  }
+    if (!matchId) {
+      alert("Match ID is missing");
+      return;
+    }
 
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this match?"
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    console.log("Deleting match:", matchId);
-    console.log("User ID:", USER_ID);
-
-    const response = await fetch(
-      `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": USER_ID,
-        },
-      }
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this match?"
     );
 
-    const data = await response.json().catch(() => ({}));
+    if (!confirmDelete) return;
 
-    console.log("Delete status:", response.status);
-    console.log("Delete response:", data);
+    try {
+      const response = await fetch(
+        `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": USER_ID,
+          },
+        }
+      );
 
-    if (!response.ok) {
-      throw new Error(
-        data.message ||
-        data.error ||
-        `Failed to delete match (${response.status})`
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            `Failed to delete match (${response.status})`
+        );
+      }
+
+      setAvailableMatches((prev) =>
+        prev.filter(
+          (savedMatch) =>
+            String(savedMatch._id) !== String(matchId)
+        )
+      );
+
+      if (
+        match._id &&
+        String(match._id) === String(matchId)
+      ) {
+        localStorage.removeItem(STORAGE_KEY);
+
+        setMatch({
+          ...initialMatch,
+          team1Players: Array(11).fill(""),
+          team2Players: Array(11).fill(""),
+        });
+
+        setShowMatches(false);
+        setShowRestore(false);
+      }
+
+      alert("Match deleted successfully");
+    } catch (error) {
+      console.error("Error deleting match:", error);
+
+      alert(
+        `Unable to delete match: ${
+          error.message || "Failed to delete match"
+        }`
       );
     }
+  };
 
-    // Remove match from the list
-    setAvailableMatches((prev) =>
-      prev.filter(
-        (savedMatch) =>
-          String(savedMatch._id) !== String(matchId)
-      )
-    );
-
-    // If this is the currently restored match
-    if (
-      match._id &&
-      String(match._id) === String(matchId)
-    ) {
-      localStorage.removeItem(STORAGE_KEY);
-
-      setMatch({
-        ...initialMatch,
-        team1Players: Array(11).fill(""),
-        team2Players: Array(11).fill(""),
-      });
-
-      setShowMatches(false);
-      setShowRestore(false);
-    }
-
-    alert("Match deleted successfully");
-
-  } catch (error) {
-    console.error("Error deleting match:", error);
-
-    alert(
-      `Unable to delete match: ${error.message}`
-    );
-  }
-};
   /*
     DOWNLOAD PDF
   */

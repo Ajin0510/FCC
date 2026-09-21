@@ -1,45 +1,35 @@
 const mongoose = require("mongoose");
 
-const matchSchema = new mongoose.Schema(
+const MatchSchema = new mongoose.Schema(
   {
     matchType: {
       type: String,
-      required: true,
-    },
-
-    lockedBy: {
-      type: String,
-      default: null,
-    },
-
-    isLocked: {
-      type: Boolean,
-      default: false,
+      default: "",
     },
 
     totalOvers: {
       type: Number,
-      required: true,
+      default: 6,
     },
 
     team1: {
       type: String,
-      required: true,
+      default: "",
     },
 
     team2: {
       type: String,
-      required: true,
+      default: "",
     },
 
     team1Players: {
       type: [String],
-      default: [],
+      default: () => Array(11).fill(""),
     },
 
     team2Players: {
       type: [String],
-      default: [],
+      default: () => Array(11).fill(""),
     },
 
     matchStarted: {
@@ -53,7 +43,7 @@ const matchSchema = new mongoose.Schema(
     },
 
     inningsData: {
-      type: Array,
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
 
@@ -78,12 +68,12 @@ const matchSchema = new mongoose.Schema(
     },
 
     overs: {
-      type: Array,
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
 
     currentOver: {
-      type: Array,
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
 
@@ -113,12 +103,12 @@ const matchSchema = new mongoose.Schema(
     },
 
     batsmanStats: {
-      type: Object,
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
 
     bowlerStats: {
-      type: Object,
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
 
@@ -126,12 +116,30 @@ const matchSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // The only user allowed to edit/delete this match.
+    ownerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    // Kept for compatibility with existing data/code.
+    lockedBy: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    isLocked: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
-const Match = mongoose.model("Match", matchSchema);
-
-module.exports = Match;
+module.exports = mongoose.model("Match", MatchSchema);
