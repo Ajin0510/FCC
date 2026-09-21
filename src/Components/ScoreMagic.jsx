@@ -1196,7 +1196,7 @@ export default function ScoreMagic() {
           </h1>
 
           <div className={card}>
-            <h2 className="mb-5 text-xl font-bold text-amber-400">
+            <h2 className="mb-5 text-xl font-bold text-amber-400 text-center">
               Match Type
             </h2>
 
@@ -1250,7 +1250,7 @@ export default function ScoreMagic() {
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <input
-                className={input}
+                 className={`${input} text-center`}
                 placeholder="Team 1 Name"
                 value={match.team1}
                 onChange={(e) =>
@@ -1262,7 +1262,7 @@ export default function ScoreMagic() {
               />
 
               <input
-                className={input}
+                  className={`${input} text-center`}
                 placeholder="Team 2 Name"
                 value={match.team2}
                 onChange={(e) =>
@@ -1275,7 +1275,7 @@ export default function ScoreMagic() {
             </div>
 
             <select
-              className={`${input} mt-5`}
+              className={`${input} mt-5 text-center`}
               value={match.totalOvers}
               onChange={(e) =>
                 updateMatch({
@@ -1303,7 +1303,7 @@ export default function ScoreMagic() {
           {/* TEAM 1 PLAYERS */}
 
           <div className={`${card} mt-6`}>
-            <h2 className="mb-4 text-xl font-bold text-amber-400">
+            <h2 className="mb-4 text-xl font-bold text-amber-400 text-center">
               {match.team1 ||
                 "Team 1"}{" "}
               Players
@@ -1314,7 +1314,7 @@ export default function ScoreMagic() {
                 (player, index) => (
                   <input
                     key={index}
-                    className={input}
+                  className={`${input} text-center`}
                     placeholder={`Player ${
                       index + 1
                     }`}
@@ -1341,7 +1341,7 @@ export default function ScoreMagic() {
           {/* TEAM 2 PLAYERS */}
 
           <div className={`${card} mt-6`}>
-            <h2 className="mb-4 text-xl font-bold text-amber-400">
+            <h2 className="mb-4 text-xl font-bold text-amber-400 text-center">
               {match.team2 ||
                 "Team 2"}{" "}
               Players
@@ -1352,7 +1352,7 @@ export default function ScoreMagic() {
                 (player, index) => (
                   <input
                     key={index}
-                    className={input}
+                    className={`${input} text-center`}
                     placeholder={`Player ${
                       index + 1
                     }`}
