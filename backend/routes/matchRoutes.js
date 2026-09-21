@@ -3,6 +3,11 @@ const Match = require("../models/Match");
 
 const router = express.Router();
 
+/*
+====================================================
+CREATE MATCH
+====================================================
+*/
 router.post("/", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -16,42 +21,58 @@ router.post("/", async (req, res) => {
     const match = new Match({
       ...req.body,
 
-      // Server decides who owns the match
+      // Server decides the owner
       lockedBy: userId,
       isLocked: true,
     });
 
     const savedMatch = await match.save();
 
-    res.status(201).json(savedMatch);
+    return res.status(201).json(savedMatch);
   } catch (error) {
-    console.error(error);
+    console.error("CREATE MATCH ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to save match",
       error: error.message,
     });
   }
 });
 
+
+/*
+====================================================
+GET ALL MATCHES
+====================================================
+*/
 router.get("/", async (req, res) => {
   try {
-    const matches = await Match.find();
+    const matches = await Match.find().sort({
+      _id: -1,
+    });
 
-    res.status(200).json(matches);
+    return res.status(200).json(matches);
   } catch (error) {
-    console.error(error);
+    console.error("GET MATCHES ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch matches",
       error: error.message,
     });
   }
 });
 
+
+/*
+====================================================
+GET ONE MATCH
+====================================================
+*/
 router.get("/:id", async (req, res) => {
   try {
-    const match = await Match.findById(req.params.id);
+    const { id } = req.params;
+
+    const match = await Match.findById(id);
 
     if (!match) {
       return res.status(404).json({
@@ -59,17 +80,23 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    res.status(200).json(match);
+    return res.status(200).json(match);
   } catch (error) {
-    console.error(error);
+    console.error("GET MATCH ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch match",
       error: error.message,
     });
   }
 });
 
+
+/*
+====================================================
+UPDATE MATCH
+====================================================
+*/
 router.put("/:id", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -80,23 +107,30 @@ router.put("/:id", async (req, res) => {
       });
     }
 
+    const { id } = req.params;
+
     const updatedMatch = await Match.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: id,
 
         $or: [
-          { isLocked: false },
-          { lockedBy: userId },
+          {
+            isLocked: false,
+          },
+          {
+            lockedBy: userId,
+          },
         ],
       },
       req.body,
       {
-        returnDocument: "after",
+        new: true,
+        runValidators: true,
       }
     );
 
     if (!updatedMatch) {
-      const match = await Match.findById(req.params.id);
+      const match = await Match.findById(id);
 
       if (!match) {
         return res.status(404).json({
@@ -110,57 +144,117 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    res.status(200).json(updatedMatch);
+    return res.status(200).json(updatedMatch);
   } catch (error) {
-    console.error(error);
+    console.error("UPDATE MATCH ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to update match",
       error: error.message,
     });
   }
 });
+
+
+/*
+====================================================
+DELETE MATCH
+====================================================
+*/
 router.delete("/:id", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
 
+    console.log("=================================");
+    console.log("DELETE MATCH REQUEST");
+    console.log("Match ID:", req.params.id);
+    console.log("User ID:", userId);
+    console.log("=================================");
+
+    /*
+    -----------------------------------------------
+    Check User ID
+    -----------------------------------------------
+    */
     if (!userId) {
       return res.status(401).json({
         message: "User ID is required",
       });
     }
 
-    const deletedMatch = await Match.findOneAndDelete({
-      _id: req.params.id,
-      lockedBy: userId,
-    });
+    const { id } = req.params;
 
-    if (!deletedMatch) {
-      const match = await Match.findById(req.params.id);
+    /*
+    -----------------------------------------------
+    First check whether match exists
+    -----------------------------------------------
+    */
+    const existingMatch = await Match.findById(id);
 
-      if (!match) {
-        return res.status(404).json({
-          message: "Match not found",
-        });
-      }
+    if (!existingMatch) {
+      console.log("Match does not exist:", id);
 
-      return res.status(403).json({
-        message: "You cannot delete another user's match",
+      return res.status(404).json({
+        message: "Match not found",
       });
     }
 
-    res.status(200).json({
+    /*
+    -----------------------------------------------
+    Check ownership
+    -----------------------------------------------
+    */
+    console.log("Stored lockedBy:", existingMatch.lockedBy);
+    console.log("Request userId:", userId);
+
+    if (
+      String(existingMatch.lockedBy) !==
+      String(userId)
+    ) {
+      console.log("DELETE DENIED - USER DOES NOT OWN MATCH");
+
+      return res.status(403).json({
+        message:
+          "You cannot delete another user's match",
+        lockedBy: existingMatch.lockedBy,
+        requestedBy: userId,
+      });
+    }
+
+    /*
+    -----------------------------------------------
+    Delete match
+    -----------------------------------------------
+    */
+    const deletedMatch =
+      await Match.findByIdAndDelete(id);
+
+    if (!deletedMatch) {
+      return res.status(404).json({
+        message: "Match could not be deleted",
+      });
+    }
+
+    console.log(
+      "MATCH DELETED SUCCESSFULLY:",
+      deletedMatch._id
+    );
+
+    return res.status(200).json({
+      success: true,
       message: "Match deleted successfully",
       deletedMatch,
     });
   } catch (error) {
-    console.error(error);
+    console.error("DELETE MATCH ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
       message: "Failed to delete match",
       error: error.message,
     });
   }
 });
+
 
 module.exports = router;
