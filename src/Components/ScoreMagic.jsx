@@ -437,6 +437,32 @@ export default function ScoreMagic() {
       : match.team2Players;
 
   /*
+    CREATE NEW MATCH
+    -----------------------------------------------
+    This is important for viewers.
+
+    A viewer can be watching somebody else's match,
+    then leave that match and start a completely
+    separate match of their own.
+  */
+
+  const createNewMatch = () => {
+    localStorage.removeItem(STORAGE_KEY);
+
+    setMatch({
+      ...initialMatch,
+      team1Players: Array(11).fill(""),
+      team2Players: Array(11).fill(""),
+      ownerId: USER_ID,
+      lockedBy: USER_ID,
+      isLocked: false,
+    });
+
+    setShowRestore(false);
+    setShowMatches(false);
+  };
+
+  /*
     START MATCH
   */
 
@@ -493,8 +519,9 @@ export default function ScoreMagic() {
           .catch(() => ({}));
 
         throw new Error(
-          errorData.error ||
-            "Failed to save match"
+          errorData.message ||
+            errorData.error ||
+            `Failed to save match (${response.status})`
         );
       }
 
@@ -1007,6 +1034,14 @@ export default function ScoreMagic() {
             </button>
 
             <button
+              type="button"
+              onClick={createNewMatch}
+              className="mt-3 w-full rounded-xl border border-amber-400/40 py-3 font-bold text-amber-400"
+            >
+              ➕ Create New Match
+            </button>
+
+            <button
               onClick={() => deleteMatch(match._id)}
               className="mt-3 w-full rounded-xl border border-red-500/40 py-3 text-red-400"
             >
@@ -1487,7 +1522,25 @@ export default function ScoreMagic() {
               This match is being edited by another user.
               The score updates automatically.
             </p>
+
+            <button
+              type="button"
+              onClick={createNewMatch}
+              className="mt-4 w-full rounded-xl bg-amber-400 px-4 py-3 font-bold text-black transition hover:bg-yellow-300"
+            >
+              ➕ Create New Match
+            </button>
           </div>
+        )}
+
+        {!isReadOnly && match.matchStarted && (
+          <button
+            type="button"
+            onClick={createNewMatch}
+            className="mb-4 w-full rounded-xl border border-amber-400/40 px-4 py-3 font-bold text-amber-400 transition hover:bg-amber-400 hover:text-black"
+          >
+            ➕ Create New Match
+          </button>
         )}
 
         <div
