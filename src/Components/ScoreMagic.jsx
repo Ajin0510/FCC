@@ -282,25 +282,18 @@ export default function ScoreMagic() {
   };
 
   /*
-    BLOCK BROWSER BACK
+    BROWSER BACK
+    Allow the browser Back button to leave ScoreMagic
+    and return to the previous page (Home page).
   */
 
   useEffect(() => {
     if (!match.matchStarted || matchFinished) return;
 
     const handlePopState = () => {
-      window.history.pushState(
-        { scoreMagic: true },
-        "",
-        window.location.href
-      );
+      // Do not push the current page back into history.
+      // The browser can now navigate back to the Home page.
     };
-
-    window.history.pushState(
-      { scoreMagic: true },
-      "",
-      window.location.href
-    );
 
     window.addEventListener(
       "popstate",
