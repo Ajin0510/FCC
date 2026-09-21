@@ -790,69 +790,80 @@ export default function ScoreMagic() {
   */
 
   const deleteMatch = async (matchId) => {
-    if (!matchId) return;
+  if (!matchId) {
+    alert("Match ID is missing");
+    return;
+  }
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this match?"
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this match?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    console.log("Deleting match:", matchId);
+    console.log("User ID:", USER_ID);
+
+    const response = await fetch(
+      `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": USER_ID,
+        },
+      }
     );
 
-    if (!confirmDelete) return;
+    const data = await response.json().catch(() => ({}));
 
-    try {
-      const response = await fetch(
-        `https://fcc-backend-4a4b.onrender.com/api/matches/${matchId}`,
-        {
-          method: "DELETE",
+    console.log("Delete status:", response.status);
+    console.log("Delete response:", data);
 
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": USER_ID,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({}));
-
-        throw new Error(
-          errorData.error ||
-            "Failed to delete match"
-        );
-      }
-
-      setAvailableMatches((prev) =>
-        prev.filter(
-          (savedMatch) =>
-            savedMatch._id !== matchId
-        )
-      );
-
-      if (match._id === matchId) {
-        localStorage.removeItem(STORAGE_KEY);
-
-        setMatch({
-          ...initialMatch,
-          team1Players: Array(11).fill(""),
-          team2Players: Array(11).fill(""),
-        });
-
-        setShowMatches(false);
-        setShowRestore(false);
-      }
-    } catch (error) {
-      console.error(
-        "Error deleting match:",
-        error
-      );
-
-      alert(
-        `Unable to delete match: ${error.message}`
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        data.error ||
+        `Failed to delete match (${response.status})`
       );
     }
-  };
 
+    // Remove match from the list
+    setAvailableMatches((prev) =>
+      prev.filter(
+        (savedMatch) =>
+          String(savedMatch._id) !== String(matchId)
+      )
+    );
+
+    // If this is the currently restored match
+    if (
+      match._id &&
+      String(match._id) === String(matchId)
+    ) {
+      localStorage.removeItem(STORAGE_KEY);
+
+      setMatch({
+        ...initialMatch,
+        team1Players: Array(11).fill(""),
+        team2Players: Array(11).fill(""),
+      });
+
+      setShowMatches(false);
+      setShowRestore(false);
+    }
+
+    alert("Match deleted successfully");
+
+  } catch (error) {
+    console.error("Error deleting match:", error);
+
+    alert(
+      `Unable to delete match: ${error.message}`
+    );
+  }
+};
   /*
     DOWNLOAD PDF
   */
