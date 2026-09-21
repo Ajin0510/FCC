@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const STORAGE_KEY = "scoremagic-match";
+const VIEWED_MATCH_KEY = "scoremagic-viewed-match";
 const USER_ID_KEY = "scoremagic-user-id";
 
 const getUserId = () => {
@@ -155,9 +156,20 @@ export default function ScoreMagic() {
 
   const [showRestore, setShowRestore] = useState(match.matchStarted);
 
+  // Explicitly track when this tab is watching another user's match.
+  // This is more reliable than relying only on the shared localStorage copy.
+  const [isViewingLive, setIsViewingLive] = useState(() => {
+    return Boolean(
+      sessionStorage.getItem(VIEWED_MATCH_KEY)
+    );
+  });
+
   const isReadOnly =
-    Boolean(match.lockedBy) &&
-    String(match.lockedBy) !== String(USER_ID);
+    isViewingLive ||
+    (
+      Boolean(match.lockedBy) &&
+      String(match.lockedBy) !== String(USER_ID)
+    );
 
   const updateMatch = (data) => {
     if (isReadOnly) {
@@ -194,8 +206,54 @@ export default function ScoreMagic() {
     }
   };
 
+  /*
+    RESTORE VIEW-ONLY MATCH AFTER REFRESH
+
+    If this tab was watching another user's match before
+    refresh, remember only the match ID in sessionStorage.
+    On refresh we fetch the latest server copy. We never
+    save the viewer's copy as an editable local match.
+  */
+  useEffect(() => {
+    const viewedMatchId =
+      sessionStorage.getItem(VIEWED_MATCH_KEY);
+
+    if (!viewedMatchId) return;
+
+    setIsViewingLive(true);
+
+    const restoreViewedMatch = async () => {
+      try {
+        const response = await fetch(
+          `https://fcc-backend-4a4b.onrender.com/api/matches/${viewedMatchId}`
+        );
+
+        if (!response.ok) {
+          sessionStorage.removeItem(VIEWED_MATCH_KEY);
+          setIsViewingLive(false);
+          return;
+        }
+
+        const latestMatch = await response.json();
+
+        // If the match now belongs to this tab, don't force
+        // view-only mode; otherwise it remains view-only.
+        setMatch(latestMatch);
+        setShowRestore(false);
+      } catch (error) {
+        console.error(
+          "Unable to restore live match after refresh:",
+          error
+        );
+      }
+    };
+
+    restoreViewedMatch();
+  }, []);
+
   const myMatches = availableMatches.filter(
-    (savedMatch) => savedMatch.lockedBy === USER_ID
+    (savedMatch) =>
+      String(savedMatch.lockedBy) === String(USER_ID)
   );
 
   const liveMatches = availableMatches.filter(
@@ -385,49 +443,99 @@ export default function ScoreMagic() {
   /*
     LIVE SCORE FOR VIEWERS
 
-    User B reads the latest match from MongoDB every 2 seconds.
+    The viewer never waits for a page refresh.
+    Every second the tab requests the latest match from
+    MongoDB with cache disabled and updates the screen.
+
+    The viewer does NOT send PUT requests because
+    isReadOnly is true.
   */
 
   useEffect(() => {
-    if (!isReadOnly || !match._id) {
+    if (
+      !isReadOnly ||
+      !match._id ||
+      !isViewingLive
+    ) {
       return;
     }
+
+    let stopped = false;
 
     const loadLatestMatch = async () => {
       try {
         const response = await fetch(
-          `https://fcc-backend-4a4b.onrender.com/api/matches/${match._id}`
+          `https://fcc-backend-4a4b.onrender.com/api/matches/${match._id}?_=${Date.now()}`,
+          {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+          }
         );
 
         if (!response.ok) {
           return;
         }
 
-        const latestMatch = await response.json();
+        const latestMatch =
+          await response.json();
 
-        setMatch((prev) => ({
-          ...prev,
-          ...latestMatch,
-        }));
+        if (stopped) return;
+
+        setMatch((prev) => {
+          // Only update when the server actually has newer data.
+          // This avoids unnecessary React renders.
+          const sameScore =
+            prev.score === latestMatch.score &&
+            prev.wickets === latestMatch.wickets &&
+            prev.innings === latestMatch.innings &&
+            prev.overs?.length ===
+              latestMatch.overs?.length &&
+            prev.currentOver?.length ===
+              latestMatch.currentOver?.length;
+
+          if (sameScore) {
+            return {
+              ...prev,
+              ...latestMatch,
+            };
+          }
+
+          return {
+            ...prev,
+            ...latestMatch,
+          };
+        });
       } catch (error) {
-        console.error(
-          "Live score update error:",
-          error
-        );
+        if (!stopped) {
+          console.error(
+            "Live score update error:",
+            error
+          );
+        }
       }
     };
 
+    // Load immediately, then keep polling.
     loadLatestMatch();
 
-    const interval = setInterval(
+    const interval = window.setInterval(
       loadLatestMatch,
-      2000
+      1000
     );
 
     return () => {
-      clearInterval(interval);
+      stopped = true;
+      window.clearInterval(interval);
     };
-  }, [isReadOnly, match._id]);
+  }, [
+    isReadOnly,
+    isViewingLive,
+    match._id,
+  ]);
 
   const battingPlayers =
     match.battingTeam === match.team1
@@ -450,7 +558,14 @@ export default function ScoreMagic() {
   */
 
   const createNewMatch = () => {
+    sessionStorage.removeItem(
+      VIEWED_MATCH_KEY
+    );
+
+    setIsViewingLive(false);
+
     localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(VIEWED_MATCH_KEY);
 
     setMatch({
       ...initialMatch,
@@ -529,6 +644,11 @@ export default function ScoreMagic() {
       }
 
       const savedMatch = await response.json();
+
+      sessionStorage.removeItem(
+        VIEWED_MATCH_KEY
+      );
+      setIsViewingLive(false);
 
       console.log(
         "Match saved:",
@@ -855,6 +975,8 @@ export default function ScoreMagic() {
         String(match._id) === String(matchId)
       ) {
         localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(VIEWED_MATCH_KEY);
+        setIsViewingLive(false);
 
         setMatch({
           ...initialMatch,
@@ -1323,6 +1445,9 @@ export default function ScoreMagic() {
                               setMatch(
                                 savedMatch
                               );
+                              sessionStorage.removeItem(
+                                VIEWED_MATCH_KEY
+                              );
                               setShowMatches(
                                 false
                               );
@@ -1429,8 +1554,19 @@ export default function ScoreMagic() {
                               const latestMatch =
                                 await response.json();
 
+                              // This tab is now a viewer.
+                              setIsViewingLive(true);
+
                               setMatch(
                                 latestMatch
+                              );
+
+                              // Remember only that this tab is viewing
+                              // this match. Do not put it in the editable
+                              // local match storage.
+                              sessionStorage.setItem(
+                                VIEWED_MATCH_KEY,
+                                String(savedMatch._id)
                               );
 
                               setShowMatches(
