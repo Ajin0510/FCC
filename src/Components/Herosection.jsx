@@ -24,22 +24,22 @@ export default function Herosection() {
     <section
       className="
         relative
-        w-full
-        min-h-[560px]
+        left-1/2
+        w-screen
+        -translate-x-1/2
+        min-h-[700px]
         overflow-hidden
         bg-black
 
-        sm:min-h-[600px]
+        sm:min-h-[720px]
 
         md:min-h-screen
-
         lg:min-h-screen
-
         xl:min-h-screen
-
         2xl:min-h-screen
       "
     >
+
       {/* =====================================================
           BACKGROUND
       ====================================================== */}
@@ -47,112 +47,187 @@ export default function Herosection() {
       <div className="absolute inset-0 overflow-hidden bg-black">
 
         {/* =================================================
-            BLURRED BACKGROUND
+            MOBILE BACKGROUND
+            BELOW 768px
         ================================================== */}
 
-        <motion.img
-          src="/herofinal.png"
-          alt=""
-          initial={{
-            scale: 1.08,
-            x: 0,
-            y: 0,
-          }}
-          animate={{
-            scale: [1.08, 1.15, 1.08],
-            x: [-10, 10, -10],
-            y: [0, -5, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-cover
-            opacity-50
-            blur-xl
-          "
-        />
+        <div className="absolute inset-0 block md:hidden">
+
+          {/* Mobile blurred background */}
+
+          <motion.img
+            src="/herofinal.png"
+            alt=""
+            initial={{
+              scale: 1.08,
+            }}
+            animate={{
+              scale: [1.08, 1.12, 1.08],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+              opacity-40
+              blur-xl
+            "
+          />
+
+          {/* =================================================
+              MOBILE PLAYER IMAGE
+
+              The important part:
+              scale is controlled by Motion itself.
+          ================================================== */}
+
+          <div
+            className="
+              absolute
+              inset-x-0
+              top-[145px]
+              h-[430px]
+              overflow-hidden
+            "
+          >
+            <motion.img
+              src="/herofinal.png"
+              alt="Friends Cricket Club players"
+              initial={{
+                scale: 1.35,
+                x: 0,
+                y: 0,
+              }}
+              animate={{
+                scale: [1.35, 1.38, 1.35],
+                x: [0, -2, 0, 2, 0],
+                y: [0, -1, 0, 1, 0],
+              }}
+              transition={{
+                duration: 18,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="
+                absolute
+                left-1/2
+                top-1/2
+                h-auto
+                w-full
+                min-w-full
+                max-w-none
+                -translate-x-1/2
+                -translate-y-1/2
+              "
+            />
+          </div>
+        </div>
 
         {/* =================================================
-            MAIN HERO IMAGE
-
-            ALL SCREEN SIZES:
-            - Zoom animation enabled
-            - Mobile/tablet: object-contain
-            - Desktop: object-cover
+            TABLET + DESKTOP
+            768px AND ABOVE
         ================================================== */}
 
-        <motion.img
-          src="/herofinal.png"
-          alt="Friends Cricket Club players"
-          initial={{
-            scale: 1.01,
-            x: 0,
-            y: 0,
-          }}
-          animate={{
-            scale: [1.01, 1.035, 1.01],
-            x: [0, -2, 0, 2, 0],
-            y: [0, -1, 0, 1, 0],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="
-            absolute
-            inset-0
-            h-full
-            w-full
-            object-contain
-            object-center
+        <div className="absolute inset-0 hidden md:block">
 
-            min-[1280px]:object-cover
-          "
-        />
+          {/* Blurred background */}
 
-        {/* =================================================
-            DESKTOP ZOOM
+          <motion.img
+            src="/herofinal.png"
+            alt=""
+            initial={{
+              scale: 1.08,
+              x: 0,
+              y: 0,
+            }}
+            animate={{
+              scale: [1.08, 1.15, 1.08],
+              x: [-10, 10, -10],
+              y: [0, -5, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+              opacity-50
+              blur-xl
+            "
+          />
 
-            Stronger zoom for large screens.
-        ================================================== */}
+          {/* Main desktop image */}
 
-        <motion.img
-          src="/herofinal.png"
-          alt=""
-          initial={{
-            scale: 1.04,
-            x: 0,
-            y: 0,
-          }}
-          animate={{
-            scale: [1.04, 1.08, 1.04],
-            x: [0, -4, 0, 4, 0],
-            y: [0, -2, 0, 2, 0],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="
-            absolute
-            inset-0
-            hidden
-            h-full
-            w-full
-            object-cover
+          <motion.img
+            src="/herofinal.png"
+            alt="Friends Cricket Club players"
+            initial={{
+              scale: 1.01,
+              x: 0,
+              y: 0,
+            }}
+            animate={{
+              scale: [1.01, 1.035, 1.01],
+              x: [0, -2, 0, 2, 0],
+              y: [0, -1, 0, 1, 0],
+            }}
+            transition={{
+              duration: 18,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+              object-center
+            "
+          />
 
-            min-[1280px]:block
-          "
-        />
+          {/* =================================================
+              DESKTOP ZOOM
+          ================================================== */}
+
+          <motion.img
+            src="/herofinal.png"
+            alt=""
+            initial={{
+              scale: 1.04,
+              x: 0,
+              y: 0,
+            }}
+            animate={{
+              scale: [1.04, 1.08, 1.04],
+              x: [0, -4, 0, 4, 0],
+              y: [0, -2, 0, 2, 0],
+            }}
+            transition={{
+              duration: 18,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+            "
+          />
+        </div>
 
         {/* =================================================
             DARK OVERLAY
@@ -162,7 +237,9 @@ export default function Herosection() {
           className="
             absolute
             inset-0
-            bg-black/20
+            bg-black/15
+
+            md:bg-black/20
           "
         />
 
@@ -175,11 +252,14 @@ export default function Herosection() {
             absolute
             inset-x-0
             top-0
-            h-[55%]
+            h-[45%]
             bg-gradient-to-b
             from-black/80
-            via-black/30
+            via-black/25
             to-transparent
+
+            md:h-[55%]
+            md:via-black/30
           "
         />
 
@@ -192,11 +272,14 @@ export default function Herosection() {
             absolute
             inset-x-0
             bottom-0
-            h-[45%]
+            h-[40%]
             bg-gradient-to-t
             from-black
-            via-black/50
+            via-black/40
             to-transparent
+
+            md:h-[45%]
+            md:via-black/50
           "
         />
       </div>
@@ -237,10 +320,10 @@ export default function Herosection() {
         className="
           relative
           z-10
-          min-h-[560px]
+          min-h-[700px]
           w-full
 
-          sm:min-h-[600px]
+          sm:min-h-[720px]
 
           md:min-h-screen
         "
@@ -269,7 +352,9 @@ export default function Herosection() {
           "
         >
 
-          {/* ESTABLISHED 2018 */}
+          {/* =================================================
+              ESTABLISHED 2018
+          ================================================== */}
 
           <motion.div
             initial={{
@@ -294,6 +379,7 @@ export default function Herosection() {
               md:gap-5
             "
           >
+
             {/* LEFT LINE */}
 
             <div
@@ -393,7 +479,9 @@ export default function Herosection() {
             CLUB
           </motion.h1>
 
-          {/* GOLD UNDERLINE */}
+          {/* =================================================
+              GOLD UNDERLINE
+          ================================================== */}
 
           <motion.div
             initial={{
@@ -429,14 +517,14 @@ export default function Herosection() {
         <div
           className="
             absolute
-            bottom-5
+            bottom-6
             left-0
             z-20
             w-full
-            px-2
+            px-0
 
             sm:bottom-7
-            sm:px-4
+            sm:px-2
 
             md:bottom-10
             md:px-8
