@@ -153,6 +153,7 @@ export default function ScoreMagic() {
   const [availableMatches, setAvailableMatches] = useState([]);
   const [showMatches, setShowMatches] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [startingMatch, setStartingMatch] = useState(false);
 
   const [showRestore, setShowRestore] = useState(match.matchStarted);
 
@@ -584,13 +585,16 @@ export default function ScoreMagic() {
     START MATCH
   */
 
-  const startMatch = async () => {
+  const startMatch = () => {
+    // Prevent duplicate starts while the first save request is being sent.
+    if (startingMatch) return;
+
     if (!match.matchType) {
       alert("Please select match type");
       return;
     }
 
-    if (!match.team1 || !match.team2) {
+    if (!match.team1?.trim() || !match.team2?.trim()) {
       alert("Please enter both team names");
       return;
     }
@@ -599,16 +603,12 @@ export default function ScoreMagic() {
 
     const matchData = {
       ...matchWithoutId,
-
       matchStarted: true,
       innings: 1,
-
-      battingTeam: match.team1,
-      bowlingTeam: match.team2,
-
+      battingTeam: match.team1.trim(),
+      bowlingTeam: match.team2.trim(),
       score: 0,
       wickets: 0,
-
       overs: [],
       currentOver: [],
       lockedBy: USER_ID,
@@ -616,61 +616,60 @@ export default function ScoreMagic() {
       isLocked: true,
     };
 
-    try {
-      const response = await fetch(
-        "https://fcc-backend-4a4b.onrender.com/api/matches",
-        {
-          method: "POST",
+    // Show the scoring screen immediately instead of waiting for the backend.
+    sessionStorage.removeItem(VIEWED_MATCH_KEY);
+    setIsViewingLive(false);
+    setMatch(matchData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(matchData));
+    setShowRestore(false);
+    setStartingMatch(true);
 
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": USER_ID,
-          },
-
-          body: JSON.stringify(matchData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({}));
-
-        throw new Error(
-          errorData.message ||
-            errorData.error ||
-            `Failed to save match (${response.status})`
+    // Save in the background. This request no longer blocks the scoring screen.
+    void (async () => {
+      try {
+        const response = await fetch(
+          "https://fcc-backend-4a4b.onrender.com/api/matches",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-user-id": USER_ID,
+            },
+            body: JSON.stringify(matchData),
+          }
         );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message ||
+              errorData.error ||
+              `Failed to save match (${response.status})`
+          );
+        }
+
+        const savedMatch = await response.json();
+
+        // Preserve any score changes made while the request was in flight.
+        setMatch((currentMatch) => {
+          const updatedMatch = {
+            ...currentMatch,
+            _id: savedMatch._id,
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMatch));
+          return updatedMatch;
+        });
+
+        console.log("Match saved:", savedMatch);
+      } catch (error) {
+        console.error("Error saving match:", error);
+        alert(
+          `The scoring screen is open and saved on this device, but the match could not be saved online: ${error.message}`
+        );
+      } finally {
+        setStartingMatch(false);
       }
-
-      const savedMatch = await response.json();
-
-      sessionStorage.removeItem(
-        VIEWED_MATCH_KEY
-      );
-      setIsViewingLive(false);
-
-      console.log(
-        "Match saved:",
-        savedMatch
-      );
-
-      setMatch({
-        ...matchData,
-        _id: savedMatch._id,
-      });
-
-      setShowRestore(false);
-    } catch (error) {
-      console.error(
-        "Error saving match:",
-        error
-      );
-
-      alert(
-        `Could not save match to database: ${error.message}`
-      );
-    }
+    })();
   };
 
   /*
@@ -1377,10 +1376,13 @@ export default function ScoreMagic() {
           </div>
 
           <button
+            type="button"
             onClick={startMatch}
-            className="mt-6 w-full rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 py-4 text-lg font-bold text-black"
+            disabled={startingMatch}
+            aria-busy={startingMatch}
+            className="mt-6 w-full rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 py-4 text-lg font-bold text-black transition disabled:cursor-wait disabled:opacity-70"
           >
-            Start Match 🏏
+            {startingMatch ? "Starting Match..." : "Start Match 🏏"}
           </button>
 
           <button

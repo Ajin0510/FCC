@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+} from "react-router-dom";
 
 import Background from "./Components/Background";
 import IntroLoader from "./Components/IntroLoader";
@@ -22,7 +27,7 @@ import Contact from "./Components/Contact";
 import ScoreMagic from "./Components/ScoreMagic";
 import MatchList from "./Components/MatchList";
 
-export default function App() {
+function RootLayout() {
   const [showIntro, setShowIntro] = useState(true);
 
   const handleIntroComplete = () => {
@@ -30,67 +35,46 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
+    <>
       <Background />
-
-      {/* =====================================================
-          INTRO LOADER
-      ====================================================== */}
 
       {showIntro && (
         <IntroLoader onComplete={handleIntroComplete} />
       )}
 
       <div className="relative z-10">
-        <Routes>
-
-          {/* HOME */}
-
-          <Route path="/home" element={<Home />} />
-
-          {/* OTHER PAGES */}
-
-          <Route path="/navbar" element={<Navbar />} />
-
-          <Route path="/hero" element={<Hero />} />
-
-          <Route path="/club" element={<Clubhighlights />} />
-
-          <Route path="/aboutclub" element={<AboutClub />} />
-
-          <Route path="/achievements" element={<Achievements />} />
-
-          <Route path="/teammembers" element={<TeamMembers />} />
-
-          <Route path="/gallery" element={<Gallery />} />
-
-          <Route path="/sponsors" element={<Sponsors />} />
-
-          <Route path="/testimonials" element={<Testimonials />} />
-
-          <Route path="/footer" element={<Footer />} />
-
-          <Route path="/aboutpage" element={<Aboutpage />} />
-
-          <Route path="/team" element={<Team />} />
-
-          <Route path="/gallerypage" element={<Gallerypage />} />
-
-          <Route path="/contact" element={<Contact />} />
-
-          <Route path="/scoremagic" element={<ScoreMagic />} />
-
-          <Route path="/matches" element={<MatchList />} />
-
-          {/* UNKNOWN URL → HOME */}
-
-          <Route
-            path="*"
-            element={<Navigate to="/home" replace />}
-          />
-
-        </Routes>
+        <Outlet />
       </div>
-    </BrowserRouter>
+    </>
   );
+}
+
+const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: [
+      { path: "/home", element: <Home /> },
+      { path: "/navbar", element: <Navbar /> },
+      { path: "/hero", element: <Hero /> },
+      { path: "/club", element: <Clubhighlights /> },
+      { path: "/aboutclub", element: <AboutClub /> },
+      { path: "/achievements", element: <Achievements /> },
+      { path: "/teammembers", element: <TeamMembers /> },
+      { path: "/gallery", element: <Gallery /> },
+      { path: "/sponsors", element: <Sponsors /> },
+      { path: "/testimonials", element: <Testimonials /> },
+      { path: "/footer", element: <Footer /> },
+      { path: "/aboutpage", element: <Aboutpage /> },
+      { path: "/team", element: <Team /> },
+      { path: "/gallerypage", element: <Gallerypage /> },
+      { path: "/contact", element: <Contact /> },
+      { path: "/scoremagic", element: <ScoreMagic /> },
+      { path: "/matches", element: <MatchList /> },
+      { path: "*", element: <Navigate to="/home" replace /> },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
 }
